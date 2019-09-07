@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/raff/godet"
+	"github.com/sajari/docconv"
 	"github.com/urfave/cli"
 )
 
@@ -76,6 +78,28 @@ func loadJS(username string, remote *godet.RemoteDebugger) {
 
 }
 
+func getText(pdfname string) string {
+	res, err := docconv.ConvertPath(pdfname)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(res.Body)
+}
+
+func WriteToFile(filename string, data string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.WriteString(file, data)
+	if err != nil {
+		return err
+	}
+	return file.Sync()
+}
+
 func main() {
 	switch runtime.GOOS {
 	case "darwin":
@@ -122,6 +146,11 @@ func main() {
 		fmt.Println(lowhangingfruits(text))
 		createRequest()
 		loadJS(text, remote)
+		textfrompdf := getText("page.pdf")
+		err := WriteToFile("result.txt", textfrompdf)
+		if err != nil {
+			log.Fatal(err)
+		}
 		return nil
 	}
 
