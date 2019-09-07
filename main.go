@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/raff/godet"
@@ -71,6 +72,7 @@ func loadJS(username string, remote *godet.RemoteDebugger) {
 	remote.LogEvents(true)
 	_, _ = remote.Navigate(fmt.Sprintf("https://www.instagram.com/%s/", username))
 	_ = remote.SaveScreenshot("screenshot.png", 0644, 0, true)
+	_ = remote.SavePDF("page.pdf", 0644)
 
 }
 
@@ -115,6 +117,7 @@ func main() {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Enter username to check: ")
 		text, _ := reader.ReadString('\n')
+		text = strings.TrimSuffix(text, "\n")
 		fmt.Printf("Username: %s", text)
 		fmt.Println(lowhangingfruits(text))
 		createRequest()
