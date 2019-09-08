@@ -1,6 +1,6 @@
 # What
 
-Like the pypi library spry but in golang.
+Like the pypi library [spry](https://github.com/jamesacampbell/spry) but in golang.
 
 ## How
 
