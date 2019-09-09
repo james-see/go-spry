@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 
@@ -22,7 +21,7 @@ var chromeapp string
 
 func lowhangingfruits(username string) (yesno bool) {
 	client := &http.Client{}
-	fmt.Println(username)
+	// fmt.Println(username)
 	fmt.Printf("https://www.instagram.com/%s/", username)
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://www.instagram.com/%s/", username), nil)
 	if err != nil {
@@ -35,15 +34,15 @@ func lowhangingfruits(username string) (yesno bool) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println(gotcha.StatusCode)
-	fmt.Println("lol")
+	// fmt.Println(gotcha.StatusCode)
+	// fmt.Println("lol")
 	if gotcha.StatusCode != 200 {
 		return false
-	} else {
-		return true
 	}
+	return true
 }
 
+// createRequest creates the http request object identified as client
 func createRequest() *http.Client {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "http://httpbin.org/user-agent", nil)
@@ -57,15 +56,14 @@ func createRequest() *http.Client {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(string(body))
-	fmt.Println(resp.StatusCode)
 	return client
 }
 
+// loadJS navigates to the requested webpage TODO pass in url as variable to load
 func loadJS(username string, remote *godet.RemoteDebugger) {
 	remote.RuntimeEvents(true)
 	remote.NetworkEvents(true)
@@ -78,6 +76,7 @@ func loadJS(username string, remote *godet.RemoteDebugger) {
 
 }
 
+// This function extracts text from the saved PDF for each check
 func getText(pdfname string) string {
 	res, err := docconv.ConvertPath(pdfname)
 	if err != nil {
@@ -86,6 +85,7 @@ func getText(pdfname string) string {
 	return string(res.Body)
 }
 
+// WriteToFile writes text string to a text file
 func WriteToFile(filename string, data string) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -101,16 +101,9 @@ func WriteToFile(filename string, data string) error {
 }
 
 func main() {
-	switch runtime.GOOS {
-	case "darwin":
-		chromeapp = `open "/Applications/Google Chrome Canary.app" --args`
-	case "linux":
-		chromeapp = "chromium-browser"
-	}
-	if chromeapp != "" {
-		chromeapp = " --headless --remote-debugging-port=9222 --hide-scrollbars"
-	}
-	exec.Command("open -a '/Applications/Google Chrome Canary.app' --args --headless --remote-debugging-port=9222 --hide-scrollbars").Run()
+	cmd := exec.Command("/Applications/canary.app/Contents/MacOS/canary", "--args", "--headless", "--remote-debugging-port=9222", "--hide-scrollbars")
+	cmd.Start()
+
 	port := "localhost:9222"
 	nums := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	for i := range nums {
@@ -142,14 +135,16 @@ func main() {
 		fmt.Print("Enter username to check: ")
 		text, _ := reader.ReadString('\n')
 		text = strings.TrimSuffix(text, "\n")
-		fmt.Printf("Username: %s", text)
-		fmt.Println(lowhangingfruits(text))
-		createRequest()
-		loadJS(text, remote)
-		textfrompdf := getText("page.pdf")
-		err := WriteToFile("result.txt", textfrompdf)
-		if err != nil {
-			log.Fatal(err)
+		fmt.Printf("Username: %s\n", text)
+		if lowhangingfruits(text) {
+			createRequest()
+			loadJS(text, remote)
+			textfrompdf := getText("page.pdf")
+			err := WriteToFile("result.txt", textfrompdf)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return nil
 		}
 		return nil
 	}
@@ -157,5 +152,9 @@ func main() {
 	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
+	}
+	err = cmd.Process.Kill()
+	if err != nil {
+		panic(err) // panic as can't kill a process.
 	}
 }
